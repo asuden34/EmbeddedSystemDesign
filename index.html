@@ -44,7 +44,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: flex-start; /* Align content to the top */
             text-align: center;
             opacity: 0;
             visibility: hidden;
@@ -387,10 +387,106 @@
             margin: 0.3rem;
             font-size: 0.9rem;
         }
+
+        /* Leaderboard Tab and Modal Styles */
+        .leaderboard-tab {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(44, 44, 46, 0.7); /* Slightly different background */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #f5f5f7;
+            padding: 0.6rem 1.2rem;
+            border-radius: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 1000; /* Ensure it's above slides */
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        .leaderboard-tab:hover {
+            background: rgba(58, 58, 60, 0.8);
+            transform: translateY(-1px);
+        }
+
+        .modal-overlay {
+            position: fixed; /* Cover the whole viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* Darker semi-transparent background */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000; /* Above everything */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: rgba(28, 28, 30, 0.9); /* Consistent with slide container */
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: scale(0.95);
+            transition: transform 0.4s ease;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        .modal-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #aEaEaE;
+            font-size: 2rem;
+            font-weight: 300;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+            transition: color 0.3s ease;
+        }
+        .modal-close-btn:hover {
+            color: #ffffff;
+        }
+        #leaderboard-data-container { /* Placeholder for actual leaderboard content */
+            min-height: 200px; /* Ensure some space for content */
+            color: #f5f5f7;
+            text-align: left;
+        }
+
     </style>
 </head>
 <body>
     <div class="slide-container">
+        <!-- Leaderboard Tab Button -->
+        <button id="leaderboardTabBtn" class="leaderboard-tab">🏆 Leaderboard</button>
+
+        <!-- Slides -->
         <div class="slide active" id="slide1">
             <h2 class="slide-title">Project Overview & Objectives</h2>
             <p class="slide-subtitle">A Real-Time Multi-Game Entertainment System with Cloud Leaderboard</p>
@@ -588,6 +684,35 @@
             <p class="text-2xl font-bold mt-8 accent-blue">Thank You</p>
             <p class="text-xl mt-1">Questions?</p>
         </div>
+        <!-- End of Slides -->
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="closeLeaderboardModalBtn" class="modal-close-btn">&times;</button>
+            <h2 class="modal-title">🏆 Cloud Leaderboard</h2>
+            <div id="leaderboard-data-container">
+                <p>Leaderboard content will appear here once integrated with AWS functionality.</p>
+                <!-- Example Structure (your partner will replace this) -->
+                <!-- 
+                <table class="status-table mx-auto mt-4" style="background: rgba(44,44,46,0.8);">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>1</td><td>PlayerOne</td><td>10500</td></tr>
+                        <tr><td>2</td><td>PlayerTwo</td><td>9800</td></tr>
+                        <tr><td>3</td><td>PlayerThree</td><td>9750</td></tr>
+                    </tbody>
+                </table>
+                -->
+            </div>
+        </div>
     </div>
 
     <div class="navigation-controls">
@@ -606,25 +731,39 @@
         const progressBar = document.getElementById('progressBar');
         const slideCounter = document.getElementById('slideCounter');
         let currentSlide = 0;
-        const totalSlides = 6;
+        const totalSlides = slides.length; // This will remain 6 as modal is not a slide
+
+        // Leaderboard Modal Elements
+        const leaderboardTabBtn = document.getElementById('leaderboardTabBtn');
+        const leaderboardModal = document.getElementById('leaderboardModal');
+        const closeLeaderboardModalBtn = document.getElementById('closeLeaderboardModalBtn');
 
         function updateSlides(direction = 'next') {
+            // Hide current active slide with transition
             const oldSlide = document.querySelector('.slide.active');
-            oldSlide.style.transform = direction === 'next' ? 'translateX(-100px)' : 'translateX(100px)';
-            oldSlide.style.opacity = '0';
+            if (oldSlide) {
+                oldSlide.style.transform = direction === 'next' ? 'translateX(-50px)' : 'translateX(50px)'; // Shorter distance
+                oldSlide.style.opacity = '0';
+            }
             
+            // After a short delay for the out-transition, switch classes and transition in
             setTimeout(() => {
                 slides.forEach((slide, index) => {
                     slide.classList.remove('active');
-                    slide.style.transform = direction === 'next' ? 'translateX(100px)' : 'translateX(-100px)';
+                    // Reset transform for non-active slides to prepare for their potential in-transition
+                    if (index !== currentSlide) {
+                         slide.style.transform = direction === 'next' ? 'translateX(50px)' : 'translateX(-50px)';
+                    }
                 });
                 
+                // Activate the new current slide
                 slides[currentSlide].classList.add('active');
-                setTimeout(() => {
+                // Start its in-transition
+                setTimeout(() => { // Slight delay to ensure class is applied before transform
                     slides[currentSlide].style.transform = 'translateX(0)';
                     slides[currentSlide].style.opacity = '1';
-                }, 50);
-            }, 300);
+                }, 20); // A very short delay
+            }, 250); // Duration of the out-transition
             
             const progressPercentage = ((currentSlide + 1) / totalSlides) * 100;
             progressBar.style.width = `${progressPercentage}%`;
@@ -654,6 +793,13 @@
         });
         
         document.addEventListener('keydown', (event) => {
+            if (leaderboardModal.classList.contains('visible')) { // If modal is open, only allow Esc to close it
+                if (event.key === 'Escape') {
+                    leaderboardModal.classList.remove('visible');
+                }
+                return; // Prevent slide navigation when modal is open
+            }
+
             if (event.key === 'ArrowRight' || event.key === ' ' || event.key === 'PageDown') {
                 if (currentSlide < slides.length - 1) {
                     currentSlide++;
@@ -667,10 +813,29 @@
             }
         });
 
+        // Leaderboard Modal Logic
+        leaderboardTabBtn.addEventListener('click', () => {
+            leaderboardModal.classList.add('visible');
+        });
+
+        closeLeaderboardModalBtn.addEventListener('click', () => {
+            leaderboardModal.classList.remove('visible');
+        });
+
+        // Optional: Close modal if clicking on the overlay itself
+        leaderboardModal.addEventListener('click', (event) => {
+            if (event.target === leaderboardModal) { // Check if the click is on the overlay, not the content
+                leaderboardModal.classList.remove('visible');
+            }
+        });
+
+
         // Initialize first slide
-        slides[0].style.transform = 'translateX(0)';
-        slides[0].style.opacity = '1';
-        updateSlides();
+        if (slides.length > 0) {
+            slides[0].style.transform = 'translateX(0)';
+            slides[0].style.opacity = '1';
+        }
+        updateSlides(); // Call to set initial button states and progress
     </script>
 </body>
 </html>
